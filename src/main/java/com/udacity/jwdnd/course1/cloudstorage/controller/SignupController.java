@@ -49,7 +49,5 @@ public class SignupController {
             model.addAttribute("signupError", signupError);
             return "signup";
         }
-
-
     }
 }

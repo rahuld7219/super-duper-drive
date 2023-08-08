@@ -15,5 +15,5 @@ public interface UserMapper {
     @Insert("INSERT INTO users(username, salt, password, firstname, lastname)" +
             "VALUES(#{username}, #{salt}, #{password}, #{firstName}, #{lastName})")
     @Options(useGeneratedKeys = true, keyProperty = "userId")
-    int saveUser(User user); // returns number of affected rows, 0 for create
+    int saveUser(User user);
 }

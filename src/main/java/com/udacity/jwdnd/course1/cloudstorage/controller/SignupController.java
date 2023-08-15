@@ -26,7 +26,7 @@ public class SignupController {
     }
 
     @PostMapping
-    public String signupUser(@ModelAttribute User user, Model model, RedirectAttributes redirectAttributes) {
+    public String signupUser(@ModelAttribute User user, Model model, RedirectAttributes redirectAttributes) { // RedirectAttributes is a specialization of Spring Model interface that is use to select attributes for a redirect scenario
 
         String signupError = null;
 
@@ -44,7 +44,7 @@ public class SignupController {
         if (signupError == null) {
 //            model.addAttribute("signupSuccess", true);
             redirectAttributes.addFlashAttribute("signupSuccess", true);
-            return "redirect:login";
+            return "redirect:login"; // redirect to /login
         } else {
             model.addAttribute("signupError", signupError);
             return "signup";

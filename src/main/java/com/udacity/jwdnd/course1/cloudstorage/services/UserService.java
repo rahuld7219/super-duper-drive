@@ -26,9 +26,12 @@ public class UserService {
      * @return
      */
     public boolean isUsernameAvailable(String username) {
-        return Objects.isNull(this.userMapper.getUser(username));
+        return Objects.isNull(this.getUser(username));
     }
 
+    public User getUser(String username) {
+        return this.userMapper.getUser(username);
+    }
     public int createUser(User user) {
 
         /*

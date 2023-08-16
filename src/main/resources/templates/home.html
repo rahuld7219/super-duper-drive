@@ -41,7 +41,7 @@
                             </div>
                         </form>
                         <div class="table-responsive">
-                            <table class="table table-striped" id="fileTable">
+                            <table class="table table-striped" id="fileTable" th:if="${!#lists.isEmpty(userFiles)}">
                                 <thead>
                                     <tr>
                                         <th style="width: 20%" scope="col"></th>
@@ -52,7 +52,7 @@
                                     <tr th:each="file: ${userFiles}">
                                         <td>
                                             <a target="_blank" class="btn btn-success" th:href="@{\file\download\{id}(id = ${file.fileId})}">View</a>
-                                            <a  class="btn btn-danger" th:href="@{file\delete\{id}(id = ${file.fileId})}" m>Delete</a>
+                                            <a  class="btn btn-danger" th:href="@{file\delete\{id}(id = ${file.fileId})}">Delete</a>
                                         </td>
                                         <th scope="row" th:text="${file.fileName}">ExampleFile.txt</th>
                                     </tr>

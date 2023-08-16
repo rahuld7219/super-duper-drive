@@ -299,4 +299,27 @@ class CloudStorageApplicationTests {
 
     }
 
+    @Test
+    void createNoteAndVerifyCreatedNote() {
+
+        String username = "johndoe";
+        String password = "abc@123";
+
+        signup("John", "Doe", username, password);
+        login(username, password);
+
+        WebElement notesTab = new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
+        notesTab.click();
+        NotesTabPage notesTabPage = new NotesTabPage(driver);
+        String expectedtTitle = "Test Title";
+        String expectedDescription ="Test Description";
+        notesTabPage.createNote(expectedtTitle, expectedDescription);
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success span:nth-child(2) a")));
+        homePageLink.click();
+        Assertions.assertEquals(expectedtTitle, notesTabPage.getNoteTitle());
+        Assertions.assertEquals(expectedtTitle, notesTabPage.getNoteDescription());
+
+    }
+
 }

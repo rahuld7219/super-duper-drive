@@ -252,52 +252,52 @@ class CloudStorageApplicationTests {
         signupPage.signup(firstName, lastName, username, password);
     }
 
-    @Test
-    public void testCreateNoteAndVerifyCreatedNote() throws InterruptedException {
-
-        WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
-
-        doMockSignUp("rahul", "rahul", "rahulrahul", "123");
-        doLogIn("rahulrahul", "123");
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
-        WebElement notesTab = driver.findElement(By.id("nav-notes-tab"));
-        notesTab.click();
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("add-new-note")));
-        WebElement newNoteButton = driver.findElement(By.id("add-new-note"));
-        newNoteButton.click();
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("note-title")));
-        WebElement noteTitle = driver.findElement(By.id("note-title"));
-        noteTitle.sendKeys("Test note title");
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("note-description")));
-        WebElement noteDescription = driver.findElement(By.id("note-description"));
-        noteDescription.sendKeys("Test note description");
-
-        Thread.sleep(10000);
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("save-note-button")));
-        WebElement saveNoteButton = driver.findElement((By.id("save-note-button")));
-        saveNoteButton.click();
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
-        WebElement notesTab2 = driver.findElement(By.id("nav-notes-tab"));
-        notesTab2.click();
-
-        Thread.sleep(10000);
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("notesTable")));
-        WebElement notesTable = driver.findElement(By.id("notesTable"));
-        WebElement notesTableBody = notesTable.findElement(By.tagName("tbody"));
-        WebElement lastRow = notesTableBody.findElement(By.cssSelector("tr:last-of-type"));
-        WebElement lastRowNoteTitle = lastRow.findElement(By.tagName("th"));
-        WebElement lastRowNoteDescription = notesTableBody.findElement(By.cssSelector("td:last-of-type"));
-
-        Assertions.assertSame("Test note title", lastRowNoteTitle.getText());
-        Assertions.assertSame("Test note description", lastRowNoteDescription.getText());
-
-    }
+//    @Test
+//    public void testCreateNoteAndVerifyCreatedNote() throws InterruptedException {
+//
+//        WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
+//
+//        doMockSignUp("rahul", "rahul", "rahulrahul", "123");
+//        doLogIn("rahulrahul", "123");
+//
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
+//        WebElement notesTab = driver.findElement(By.id("nav-notes-tab"));
+//        notesTab.click();
+//
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("add-new-note")));
+//        WebElement newNoteButton = driver.findElement(By.id("add-new-note"));
+//        newNoteButton.click();
+//
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("note-title")));
+//        WebElement noteTitle = driver.findElement(By.id("note-title"));
+//        noteTitle.sendKeys("Test note title");
+//
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("note-description")));
+//        WebElement noteDescription = driver.findElement(By.id("note-description"));
+//        noteDescription.sendKeys("Test note description");
+//
+//        Thread.sleep(10000);
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("save-note-button")));
+//        WebElement saveNoteButton = driver.findElement((By.id("save-note-button")));
+//        saveNoteButton.click();
+//
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
+//        WebElement notesTab2 = driver.findElement(By.id("nav-notes-tab"));
+//        notesTab2.click();
+//
+//        Thread.sleep(10000);
+//
+//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("notesTable")));
+//        WebElement notesTable = driver.findElement(By.id("notesTable"));
+//        WebElement notesTableBody = notesTable.findElement(By.tagName("tbody"));
+//        WebElement lastRow = notesTableBody.findElement(By.cssSelector("tr:last-of-type"));
+//        WebElement lastRowNoteTitle = lastRow.findElement(By.tagName("th"));
+//        WebElement lastRowNoteDescription = notesTableBody.findElement(By.cssSelector("td:last-of-type"));
+//
+//        Assertions.assertSame("Test note title", lastRowNoteTitle.getText());
+//        Assertions.assertSame("Test note description", lastRowNoteDescription.getText());
+//
+//    }
 
     @Test
     void createNoteAndVerifyCreatedNote() {
@@ -308,17 +308,20 @@ class CloudStorageApplicationTests {
         signup("John", "Doe", username, password);
         login(username, password);
 
-        WebElement notesTab = new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
-        notesTab.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).clk();
         NotesTabPage notesTabPage = new NotesTabPage(driver);
+
         String expectedtTitle = "Test Title";
         String expectedDescription ="Test Description";
         notesTabPage.createNote(expectedtTitle, expectedDescription);
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success span:nth-child(2) a")));
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
         homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
         Assertions.assertEquals(expectedtTitle, notesTabPage.getNoteTitle());
-        Assertions.assertEquals(expectedtTitle, notesTabPage.getNoteDescription());
+        Assertions.assertEquals(expectedDescription, notesTabPage.getNoteDescription());
 
     }
 

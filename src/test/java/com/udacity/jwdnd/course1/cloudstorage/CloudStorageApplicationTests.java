@@ -12,6 +12,9 @@ import org.springframework.boot.web.server.LocalServerPort;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CloudStorageApplicationTests {
@@ -300,7 +303,7 @@ class CloudStorageApplicationTests {
 //    }
 
     @Test
-    void createNoteAndVerifyCreatedNote() {
+    void testCreateNote() {
 
         String username = "johndoe";
         String password = "abc@123";
@@ -308,21 +311,94 @@ class CloudStorageApplicationTests {
         signup("John", "Doe", username, password);
         login(username, password);
 
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).clk();
         NotesTabPage notesTabPage = new NotesTabPage(driver);
-
-        String expectedtTitle = "Test Title";
+        String expectedTitle = "Test Title";
         String expectedDescription ="Test Description";
-        notesTabPage.createNote(expectedtTitle, expectedDescription);
+        createMockNote(expectedTitle, expectedDescription, notesTabPage);
+        Assertions.assertEquals(expectedTitle, notesTabPage.getNoteTitle());
+        Assertions.assertEquals(expectedDescription, notesTabPage.getNoteDescription());
+    }
+
+    private void createMockNote(String expectedTitle, String expectedDescription, NotesTabPage notesTabPage) {
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+        notesTabPage.createNote(expectedTitle, expectedDescription);
         WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
                 until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
         homePageLink.click();
         new WebDriverWait(driver, Duration.ofSeconds(2))
                 .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
-        Assertions.assertEquals(expectedtTitle, notesTabPage.getNoteTitle());
-        Assertions.assertEquals(expectedDescription, notesTabPage.getNoteDescription());
-
     }
 
+    @Test
+    void testUpdateNote() {
+
+        String username = "johndoe";
+        String password = "abc@123";
+
+        signup("John", "Doe", username, password);
+        login(username, password);
+
+        NotesTabPage notesTabPage = new NotesTabPage(driver);
+        String title = "Test Title";
+        String description ="Test description";
+        createMockNote(title, description, notesTabPage);
+        String newTitle = "New Test Title";
+        String newDescription ="New test description";
+        String noteId = notesTabPage.editNote(newTitle, newDescription);
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+        homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+
+        List<WebElement> notes = notesTabPage.getNotes();
+        Optional<WebElement> editedNote = notes.stream()
+                .filter(
+                        note ->
+                                note.findElement(By.cssSelector("td:first-of-type button"))
+                                        .getAttribute("data-id").equals(noteId)
+                )
+                .findFirst();
+
+        Assertions.assertTrue(editedNote.isPresent());
+        Assertions.assertEquals(newTitle, editedNote.get().findElement(By.cssSelector("th:first-of-type")).getText());
+        Assertions.assertEquals(newDescription, editedNote.get().findElement(By.cssSelector("td:last-of-type")).getText());
+    }
+
+    @Test
+    void testDeleteNote() {
+
+        String username = "johndoe";
+        String password = "abc@123";
+
+        signup("John", "Doe", username, password);
+        login(username, password);
+
+        NotesTabPage notesTabPage = new NotesTabPage(driver);
+        String title = "Test Title";
+        String description ="Test description";
+        createMockNote(title, description, notesTabPage);
+
+        WebElement deleteNoteBtn = notesTabPage.getDeleteNoteBtn();
+        String[] urlStrings = deleteNoteBtn.getAttribute("href").split("/");
+        String noteId = urlStrings[urlStrings.length - 1];
+        deleteNoteBtn.click();
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+        homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+
+        List<WebElement> notes = notesTabPage.getNotes();
+        Optional<WebElement> deletedNote = notes.stream()
+                .filter(
+                        note ->
+                                note.findElement(By.cssSelector("td:first-of-type a"))
+                                        .getAttribute("href").split("/")[2].equals(noteId)
+                )
+                .findFirst();
+
+        Assertions.assertFalse(deletedNote.isPresent());
+    }
 }

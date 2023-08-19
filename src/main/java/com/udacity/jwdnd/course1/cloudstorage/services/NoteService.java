@@ -22,4 +22,12 @@ public class NoteService {
     public int createNote(Note note) {
         return this.noteMapper.saveNote(note);
     }
+
+    public int updateNote(Note note) {
+        return this.noteMapper.updateNote(note);
+    }
+
+    public void deleteNote(Integer noteId, Integer userId) {
+        this.noteMapper.deleteNoteByNoteIdAndUserId(noteId, userId);
+    }
 }

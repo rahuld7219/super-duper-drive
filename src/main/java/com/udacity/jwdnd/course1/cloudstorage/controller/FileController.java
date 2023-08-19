@@ -77,7 +77,7 @@ public class FileController {
         model.addAttribute("success",
                 "File deleted successfully.");
         //        model.addAttribute("error",
-        //        "There was an error uploading file. Please try again after some time.");
+        //        "There was an error removing file. Please try again after some time.");
         return "result";
     }
 }

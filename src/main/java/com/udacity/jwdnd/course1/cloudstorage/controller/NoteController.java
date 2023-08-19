@@ -6,9 +6,9 @@ import com.udacity.jwdnd.course1.cloudstorage.services.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 @Controller
 @RequestMapping("/note")
@@ -23,18 +23,43 @@ public class NoteController {
     }
 
     @PostMapping("create")
-    public String createNote(Authentication authentication, @ModelAttribute("noteForm") Note newNote, Model model) {
+    public String createNote(Authentication authentication, @ModelAttribute("noteForm") Note note, Model model) {
 
         Integer userId = this.userService.getUser(authentication.getName()).getUserId();
-        newNote.setUserId(userId);
-
-        if (this.noteService.createNote(newNote) < 0) {
-            model.addAttribute("error",
-                    "There was an error creating the note. Please try again after some time.");
+        note.setUserId(userId);
+        if (Objects.isNull(note.getNoteId())) {
+            if (this.noteService.createNote(note) < 0) {
+                model.addAttribute("error",
+                        "There was an error creating the note. Please try again after some time.");
+            } else {
+                model.addAttribute("success",
+                        "Note created successfully.");
+            }
         } else {
-            model.addAttribute("success",
-                    "Note created successfully.");
+            if (this.noteService.updateNote(note) < 0) {
+                model.addAttribute("error",
+                        "There was an error updating the note. Please try again after some time.");
+            } else {
+                model.addAttribute("success",
+                        "Note updated successfully.");
+            }
         }
+
+        return "result";
+    }
+
+    @GetMapping("delete/{noteId}")
+    public String deleteNote(Authentication authentication, @PathVariable Integer noteId, Model model) {
+
+        Integer userId = this.userService.getUser(authentication.getName()).getUserId();
+
+        this.noteService.deleteNote(noteId, userId);
+
+        // TODO: handle if note not found or any error while deleting the note
+        model.addAttribute("success",
+                "note deleted successfully.");
+        //        model.addAttribute("error",
+        //        "There was an error removing note. Please try again after some time.");
 
         return "result";
     }

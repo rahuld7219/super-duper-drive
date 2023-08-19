@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
@@ -28,7 +29,7 @@ public class HomeController {
     }
 
     @GetMapping
-    public String homePage(Authentication authentication, Model model) {
+    public String homePage(Authentication authentication, @ModelAttribute("noteForm") Note noteForm, Model model) {
         Integer userId = this.userService.getUser(authentication.getName()).getUserId();
 
         List<File> userFiles = this.fileService.getUserFiles(userId);

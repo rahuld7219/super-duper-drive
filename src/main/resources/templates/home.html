@@ -66,7 +66,7 @@
                         </button>
 
                         <div class="table-responsive">
-                            <table class="table table-striped" id="notesTable">
+                            <table class="table table-striped" id="notes-table" th:unless="${#lists.isEmpty(userNotes)}">
                                 <thead>
                                     <tr>
                                         <th style="width: 20%" scope="col"></th>
@@ -75,13 +75,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
+                                    <tr th:each="note: ${userNotes}" class="note-list">
                                         <td>
-                                            <button type="button" class="btn btn-success">Edit</button>
-                                            <a class="btn btn-danger">Delete</a>
+                                            <button type="button" class="btn btn-success" th:data-id="${note.noteId}" th:data-title="${note.noteTitle}" th:onclick="showNoteModal(this.getAttribute('data-id'), this.getAttribute('data-title'), [[${note.noteDescription}]])">Edit</button>
+                                            <a class="btn btn-danger" th:href="@{note/delete/{id}(id = ${note.noteId})}">Delete</a>
                                         </td>
-                                        <th scope="row">Example Note Title</th>
-                                        <td>Example Note Description </td>
+                                        <th scope="row" th:text="${note.noteTitle}">Example Note Title</th>
+                                        <td th:text="${note.noteDescription}">Example Note Description </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -98,10 +98,10 @@
                                     </div>
                                     <div class="modal-body">
                                         <form action="#" th:action="@{/note/create}" th:object="${noteForm}" method="POST">
-                                            <input type="hidden" name="noteId" id="note-id" th:field="*{noteId}">
+                                            <input type="hidden" name="noteId" id="note-id" th:value="*{noteId}" th:field="*{noteId}">
                                             <div class="form-group">
                                                 <label for="note-title" class="col-form-label">Title</label>
-                                                <input type="text" name= "noteTitle" class="form-control" id="note-title" th:field="*{noteTitle}" maxlength="20" required>
+                                                <input type="text" name= "noteTitle" class="form-control" id="note-title" th:field="*{noteTitle}" maxlength="20" required autofocus>
                                             </div>
                                             <div class="form-group">
                                                 <label for="note-description" class="col-form-label">Description</label>

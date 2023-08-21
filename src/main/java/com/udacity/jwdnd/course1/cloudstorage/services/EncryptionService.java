@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Base64;
 
 @Service
@@ -24,8 +25,8 @@ public class EncryptionService {
             SecretKey secretKey = new SecretKeySpec(key.getBytes(), "AES");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             encryptedValue = cipher.doFinal(data.getBytes("UTF-8"));
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException
-                | UnsupportedEncodingException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+                 UnsupportedEncodingException | IllegalBlockSizeException | BadPaddingException e) {
             logger.error(e.getMessage());
         }
 
@@ -40,11 +41,33 @@ public class EncryptionService {
             SecretKey secretKey = new SecretKeySpec(key.getBytes(), "AES");
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             decryptedValue = cipher.doFinal(Base64.getDecoder().decode(data));
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException
-                | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException |
+                 BadPaddingException e) {
             logger.error(e.getMessage());
         }
 
         return new String(decryptedValue);
     }
+
+    public String generateKey() {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] key = new byte[16];
+        secureRandom.nextBytes(key);
+        String encodedKey = Base64.getEncoder().encodeToString(key);
+        return encodedKey;
+    }
+
+
+    // TODO: find better way to generate key, ecrypt and decrypt, devour the encryption and implementation in java topic
+    //    public String generateKey() {
+//        try {
+//            KeyGenerator generator = KeyGenerator.getInstance("AES");
+//            generator.init(128, new SecureRandom());
+//            System.out.println(generator.generateKey().toString());
+//            return generator.generateKey().toString();
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
 }

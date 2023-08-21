@@ -1,5 +1,6 @@
 package com.udacity.jwdnd.course1.cloudstorage;
 
+import com.udacity.jwdnd.course1.cloudstorage.services.EncryptionService;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -14,7 +15,6 @@ import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CloudStorageApplicationTests {
@@ -400,5 +400,112 @@ class CloudStorageApplicationTests {
                 .findFirst();
 
         Assertions.assertFalse(deletedNote.isPresent());
+    }
+
+    @Test
+    void testSaveCredential() {
+
+        String username = "johndoe";
+        String password = "abc@123";
+
+        signup("John", "Doe", username, password);
+        login(username, password);
+
+        CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
+        String credentialUrl = "Test url";
+        String credentialUsername = "Test username";
+        String credentialPassword = "Test password";
+        saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
+        Assertions.assertEquals(credentialUrl, credentialTabPage.getCredentialUrl());
+        Assertions.assertEquals(credentialUsername, credentialTabPage.getCredentialUsername());
+        Assertions.assertNotEquals(credentialPassword, credentialTabPage.getCredentialPassword());
+    }
+
+    private void saveMockCredential(String url, String username, String password, CredentialTabPage credentialTabPage) {
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+        credentialTabPage.storeCredential(url, username, password);
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+        homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+    }
+
+    @Test
+    void testUpdateCredential() {
+
+        String username = "johndoe";
+        String password = "abc@123";
+
+        signup("John", "Doe", username, password);
+        login(username, password);
+
+        CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
+        String credentialUrl = "Test url";
+        String credentialUsername ="Test username";
+        String credentialPassword ="Test password";
+        saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
+        String newUrl = "New Test url";
+        String newUsername ="New test username";
+        String newPassword ="New test password";
+        String credentialId = credentialTabPage.editCredential(newUrl, newUsername, newPassword);
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+        homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+
+        List<WebElement> credentials = credentialTabPage.getCredentials();
+        Optional<WebElement> editedCredential = credentials.stream()
+                .filter(
+                        credential ->
+                                credential.findElement(By.cssSelector("td:first-of-type button"))
+                                        .getAttribute("data-id").equals(credentialId)
+                )
+                .findFirst();
+
+        Assertions.assertTrue(editedCredential.isPresent());
+        Assertions.assertEquals(newUrl, editedCredential.get().findElement(By.cssSelector("th:first-of-type")).getText());
+        Assertions.assertEquals(newUsername, editedCredential.get().findElement(By.cssSelector("td:nth-of-type(2)")).getText()); // td:nth-last-child(2)
+        Assertions.assertNotEquals(newPassword, editedCredential.get().findElement(By.cssSelector("td:last-of-type")).getText());
+        Assertions.assertEquals(newPassword, credentialTabPage.getCredentialPasswordInput()); // split into separate test
+    }
+
+    @Test
+    void testDeleteCredential() {
+
+        String username = "johndoe";
+        String password = "abc@123";
+
+        signup("John", "Doe", username, password);
+        login(username, password);
+
+        CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
+        String credentialUrl = "Test url";
+        String credentialUsername ="Test username";
+        String credentialPassword ="Test password";
+        saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
+
+        WebElement deleteCredentialBtn = credentialTabPage.getDeleteCredentialBtn();
+        String[] urlStrings = deleteCredentialBtn.getAttribute("href").split("/");
+        String credentialId = urlStrings[urlStrings.length - 1];
+        deleteCredentialBtn.click();
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+        homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+
+        List<WebElement> credentials = credentialTabPage.getCredentials();
+        Optional<WebElement> deletedCredential = credentials.stream()
+                .filter(
+                        credential ->
+                                credential.findElement(By.cssSelector("td:first-of-type a"))
+                                        .getAttribute("href").split("/")[2].equals(credentialId)
+                )
+                .findFirst();
+
+        Assertions.assertFalse(deletedCredential.isPresent());
     }
 }

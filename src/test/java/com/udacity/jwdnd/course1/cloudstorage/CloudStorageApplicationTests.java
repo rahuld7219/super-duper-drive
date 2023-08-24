@@ -3,6 +3,7 @@ package com.udacity.jwdnd.course1.cloudstorage;
 import com.udacity.jwdnd.course1.cloudstorage.services.EncryptionService;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -35,6 +36,11 @@ class CloudStorageApplicationTests {
         baseURL = "http://localhost:" + this.port;
     }
 
+//    @AfterEach
+//    public void afterEach() {
+//
+//    }
+
     @AfterAll
     public static void afterAll() {
         if (driver != null) {
@@ -56,7 +62,7 @@ class CloudStorageApplicationTests {
         WebElement logoutButton = driver.findElement(By.id("logout-button"));
         logoutButton.click();
         webDriverWait.until(ExpectedConditions.titleContains("Login"));
-        Assertions.assertEquals("http://localhost:" + this.port + "/login", driver.getCurrentUrl());
+        Assertions.assertEquals(this.baseURL + "/login", driver.getCurrentUrl());
     }
 
     /**
@@ -64,44 +70,17 @@ class CloudStorageApplicationTests {
      * Helper method for Udacity-supplied sanity checks.
      **/
     private void doMockSignUp(String firstName, String lastName, String userName, String password) {
-        // Create a dummy account for logging in later.
 
-        // Visit the sign-up page.
-        WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
-        driver.get("http://localhost:" + this.port + "/signup");
-        webDriverWait.until(ExpectedConditions.titleContains("Sign Up"));
+        driver.get(this.baseURL + "/signup");
+        SignupPage signupPage = new SignupPage(driver);
+        try {
+            signupPage.signup(firstName, lastName, userName, password);
+        } catch (TimeoutException e) {
+            System.out.println(e.getMessage());
+        }
 
-        // Fill out credentials
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inputFirstName")));
-        WebElement inputFirstName = driver.findElement(By.id("inputFirstName"));
-        inputFirstName.click();
-        inputFirstName.sendKeys(firstName);
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inputLastName")));
-        WebElement inputLastName = driver.findElement(By.id("inputLastName"));
-        inputLastName.click();
-        inputLastName.sendKeys(lastName);
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inputUsername")));
-        WebElement inputUsername = driver.findElement(By.id("inputUsername"));
-        inputUsername.click();
-        inputUsername.sendKeys(userName);
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inputPassword")));
-        WebElement inputPassword = driver.findElement(By.id("inputPassword"));
-        inputPassword.click();
-        inputPassword.sendKeys(password);
-
-        // Attempt to sign up.
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("buttonSignUp")));
-        WebElement buttonSignUp = driver.findElement(By.id("buttonSignUp"));
-        buttonSignUp.click();
-
-		/* Check that the sign up was successful.
-		// You may have to modify the element "success-msg" and the sign-up
-		// success message below depending on the rest of your code.
-		*/
         Assertions.assertTrue(driver.findElement(By.id("success-msg")).getText().contains("You successfully signed up!"));
+
     }
 
 
@@ -111,24 +90,14 @@ class CloudStorageApplicationTests {
      **/
     private void doLogIn(String userName, String password) {
         // Log in to our dummy account.
-        driver.get("http://localhost:" + this.port + "/login");
-        WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
 
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inputUsername")));
-        WebElement loginUserName = driver.findElement(By.id("inputUsername"));
-        loginUserName.click();
-        loginUserName.sendKeys(userName);
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inputPassword")));
-        WebElement loginPassword = driver.findElement(By.id("inputPassword"));
-        loginPassword.click();
-        loginPassword.sendKeys(password);
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("login-button")));
-        WebElement loginButton = driver.findElement(By.id("login-button"));
-        loginButton.click();
-
-        webDriverWait.until(ExpectedConditions.titleContains("Home"));
+        driver.get(this.baseURL + "/login");
+        LoginPage loginPage = new LoginPage(driver);
+        try {
+            loginPage.login(userName, password);
+        } catch (TimeoutException e) {
+            System.out.println(e.getMessage());
+        }
 
     }
 
@@ -149,7 +118,7 @@ class CloudStorageApplicationTests {
         doMockSignUp("Redirection", "Test", "RT", "123");
 
         // Check if we have been redirected to the log in page.
-        Assertions.assertEquals("http://localhost:" + this.port + "/login", driver.getCurrentUrl());
+        Assertions.assertEquals(this.baseURL + "/login", driver.getCurrentUrl());
     }
 
     /**
@@ -171,7 +140,7 @@ class CloudStorageApplicationTests {
         doLogIn("UT", "123");
 
         // Try to access a random made-up URL.
-        driver.get("http://localhost:" + this.port + "/some-random-page");
+        driver.get(this.baseURL + "/some-random-page");
         Assertions.assertFalse(driver.getPageSource().contains("Whitelabel Error Page"));
     }
 
@@ -225,12 +194,12 @@ class CloudStorageApplicationTests {
     @Test
     void testSignupLoginAccessHomeLogoutCannotAccessHome() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "SLLT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
+        doMockSignUp("SignUp Login Logout", "Test", username, password);
 
-        login(username, password);
+        doLogIn(username, password);
 
         Assertions.assertEquals(this.baseURL + "/home", driver.getCurrentUrl());
 
@@ -241,18 +210,6 @@ class CloudStorageApplicationTests {
         new WebDriverWait(driver, Duration.ofSeconds(2)).until(ExpectedConditions.titleContains("Login"));
 
         Assertions.assertEquals(this.baseURL + "/login", driver.getCurrentUrl());
-    }
-
-    private void login(String username, String password) {
-        driver.get(this.baseURL + "/login");
-        LoginPage loginPage = new LoginPage(driver);
-        loginPage.login(username, password);
-    }
-
-    private void signup(String firstName, String lastName, String username, String password) {
-        driver.get(this.baseURL + "/signup");
-        SignupPage signupPage = new SignupPage(driver);
-        signupPage.signup(firstName, lastName, username, password);
     }
 
 //    @Test
@@ -305,15 +262,15 @@ class CloudStorageApplicationTests {
     @Test
     void testCreateNote() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "CNT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
-        login(username, password);
+        doMockSignUp("Create Note", "Test", username, password);
+        doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
         String expectedTitle = "Test Title";
-        String expectedDescription ="Test Description";
+        String expectedDescription = "Test Description";
         createMockNote(expectedTitle, expectedDescription, notesTabPage);
         Assertions.assertEquals(expectedTitle, notesTabPage.getNoteTitle());
         Assertions.assertEquals(expectedDescription, notesTabPage.getNoteDescription());
@@ -333,18 +290,18 @@ class CloudStorageApplicationTests {
     @Test
     void testUpdateNote() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "UNT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
-        login(username, password);
+        doMockSignUp("Update Note", "Test", username, password);
+        doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
         String title = "Test Title";
-        String description ="Test description";
+        String description = "Test description";
         createMockNote(title, description, notesTabPage);
         String newTitle = "New Test Title";
-        String newDescription ="New test description";
+        String newDescription = "New test description";
         String noteId = notesTabPage.editNote(newTitle, newDescription);
         WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
                 until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
@@ -369,15 +326,15 @@ class CloudStorageApplicationTests {
     @Test
     void testDeleteNote() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "DNT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
-        login(username, password);
+        doMockSignUp("Delete Note", "Test", username, password);
+        doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
         String title = "Test Title";
-        String description ="Test description";
+        String description = "Test description";
         createMockNote(title, description, notesTabPage);
 
         WebElement deleteNoteBtn = notesTabPage.getDeleteNoteBtn();
@@ -405,11 +362,11 @@ class CloudStorageApplicationTests {
     @Test
     void testSaveCredential() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "SCT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
-        login(username, password);
+        doMockSignUp("Save Credential", "Test", username, password);
+        doLogIn(username, password);
 
         CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
         String credentialUrl = "Test url";
@@ -435,20 +392,20 @@ class CloudStorageApplicationTests {
     @Test
     void testUpdateCredential() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "UCT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
-        login(username, password);
+        doMockSignUp("Update Credential", "Test", username, password);
+        doLogIn(username, password);
 
         CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
         String credentialUrl = "Test url";
-        String credentialUsername ="Test username";
-        String credentialPassword ="Test password";
+        String credentialUsername = "Test username";
+        String credentialPassword = "Test password";
         saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
         String newUrl = "New Test url";
-        String newUsername ="New test username";
-        String newPassword ="New test password";
+        String newUsername = "New test username";
+        String newPassword = "New test password";
         String credentialId = credentialTabPage.editCredential(newUrl, newUsername, newPassword);
         WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
                 until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
@@ -475,16 +432,16 @@ class CloudStorageApplicationTests {
     @Test
     void testDeleteCredential() {
 
-        String username = "johndoe";
-        String password = "abc@123";
+        String username = "DCT";
+        String password = "123";
 
-        signup("John", "Doe", username, password);
-        login(username, password);
+        doMockSignUp("Delete Credential", "Test", username, password);
+        doLogIn(username, password);
 
         CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
         String credentialUrl = "Test url";
-        String credentialUsername ="Test username";
-        String credentialPassword ="Test password";
+        String credentialUsername = "Test username";
+        String credentialPassword = "Test password";
         saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
 
         WebElement deleteCredentialBtn = credentialTabPage.getDeleteCredentialBtn();

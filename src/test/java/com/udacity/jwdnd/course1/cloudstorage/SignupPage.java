@@ -35,15 +35,15 @@ public class SignupPage {
     public SignupPage(WebDriver driver) {
         this.driver = driver;
         PageFactory.initElements(driver, this);
-        waitForVisibilityOf(signUpButton);
     }
 
-    private void waitForVisibilityOf(WebElement webElement) {
+    private void waitForVisibilityOf(WebElement... webElements) {
         new WebDriverWait(this.driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOf(webElement));
+                .until(ExpectedConditions.visibilityOfAllElements(webElements));
     }
 
     public void signup(String firstName, String lastName, String username, String password) {
+        waitForVisibilityOf(firstNameInput, lastNameInput, usernameInput, passwordInput, signUpButton);
         this.firstNameInput.sendKeys(firstName);
         this.lastNameInput.sendKeys(lastName);
         this.usernameInput.sendKeys(username);

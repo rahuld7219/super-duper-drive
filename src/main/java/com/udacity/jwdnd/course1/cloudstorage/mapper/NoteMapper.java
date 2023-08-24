@@ -8,13 +8,13 @@ import java.util.List;
 @Mapper
 public interface NoteMapper {
 
-    @Insert("INSERT INTO Notes(noteid, notetitle, notedescription, userid) " +
-            "VALUES(1, #{noteTitle}, #{noteDescription}, #{userId})")
-    @Options(useGeneratedKeys = true, keyProperty = "noteId")
-    int saveNote(Note note);
-
     @Select("SELECT * FROM Notes WHERE userid = #{userId}")
     List<Note> getNotesByUserId(Integer userId);
+
+    @Insert("INSERT INTO Notes(notetitle, notedescription, userid) " +
+            "VALUES(#{noteTitle}, #{noteDescription}, #{userId})")
+    @Options(useGeneratedKeys = true, keyProperty = "noteId")
+    int saveNote(Note note);
 
     @Update("UPDATE Notes SET notetitle = #{noteTitle}, notedescription = #{noteDescription} " +
             "WHERE noteid = #{noteId}")

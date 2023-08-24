@@ -25,14 +25,14 @@ public class LoginPage {
     public LoginPage(WebDriver driver) {
         this.driver = driver;
         PageFactory.initElements(driver, this);
-        waitForVisibilityOf(loginButton);
     }
 
-    private void waitForVisibilityOf(WebElement webElement) {
-        new WebDriverWait(this.driver, Duration.ofSeconds(2)).until(ExpectedConditions.visibilityOf(webElement));
+    private void waitForVisibilityOf(WebElement... webElements) {
+        new WebDriverWait(this.driver, Duration.ofSeconds(2)).until(ExpectedConditions.visibilityOfAllElements(webElements));
     }
 
     public void login(String username, String password) {
+        waitForVisibilityOf(this.usernameInput, this.passwordInput, this.loginButton);
         this.usernameInput.sendKeys(username);
         this.passwordInput.sendKeys(password);
         this.loginButton.submit();

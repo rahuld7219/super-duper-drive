@@ -22,9 +22,15 @@ public class FilesTabPage {
     @FindBy(id = "upload-btn")
     private WebElement fileUploadBtn;
 
+    /**
+     * get the last row's view button
+     */
     @FindBy(css = "#files-table tbody tr:last-child td .btn-success")
     private WebElement downloadFileBtn;
 
+    /**
+     * get the last row's delete button
+     */
     @FindBy(css = "#files-table tbody tr:last-child td .btn-danger")
     private WebElement deleteFileBtn;
 

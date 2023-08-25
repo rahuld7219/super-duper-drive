@@ -25,15 +25,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-        // TODO: delete before submit
-        http.csrf().disable();
-        http.headers().frameOptions().disable();
-        http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
+
+            http.csrf().disable();
+            // To access h2-console
+            /*
+              http.headers().frameOptions().disable();
+              http.authorizeRequests().antMatchers("/h2-console/**").permitAll();
+            */
 
         http.authorizeRequests()
                 .antMatchers("/signup", "/css/**", "/js/**").permitAll()
                 .anyRequest().authenticated();
-
 
 
         http.formLogin()

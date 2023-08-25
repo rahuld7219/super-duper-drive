@@ -33,7 +33,6 @@ public class FileController {
 
         Integer userId = userService.getUser(authentication.getName()).getUserId();
 
-        // TODO: handle empty file upload
         if (file.isEmpty()) {
             model.addAttribute("error",
                     "Cannot upload empty file.");
@@ -48,14 +47,14 @@ public class FileController {
                     "File: " + file.getOriginalFilename() + " upload successful.");
         }
 
-        return "result"; // if used "redirect:/home" then it would redirect to /home, if used "redirect:home" then it would redirect to /file/home
+        return "result";
     }
 
     @GetMapping("download/{fileId}")
     public ResponseEntity<Resource> downloadFile(Authentication authentication, @PathVariable Integer fileId) {
 
         Integer userId = this.userService.getUser(authentication.getName()).getUserId();
-        // TODO: handle if file not found or any error while downloading file
+
         File file = this.fileService.downloadFile(fileId, userId);
 
         if (Objects.isNull(file)) {
@@ -75,12 +74,11 @@ public class FileController {
     public String deleteFile(Authentication authentication, @PathVariable Integer fileId, Model model) {
 
         Integer userId = this.userService.getUser(authentication.getName()).getUserId();
-        // TODO: handle if file not found or any error while deleting file
+        
         this.fileService.deleteFile(fileId, userId);
         model.addAttribute("success",
                 "File deleted successfully.");
-        //        model.addAttribute("error",
-        //        "There was an error removing file. Please try again after some time.");
+
         return "result";
     }
 }

@@ -11,8 +11,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public class NotesTabPage {
@@ -22,12 +20,18 @@ public class NotesTabPage {
     @FindBy(id = "add-new-note")
     private WebElement addNewNoteBtn;
 
+    /**
+     * get the last row's edit button
+     */
     @FindBys({
             @FindBy(id = "notes-table"),
             @FindBy(css = ".btn-success:last-of-type")}
     )
     private WebElement editNoteBtn;
 
+    /**
+     * get the last row's delete button
+     */
     @FindBy(css = "#notes-table .btn-danger:last-of-type")
     private WebElement deleteNoteBtn;
 
@@ -113,37 +117,13 @@ public class NotesTabPage {
         return this.noteDescription.getText();
     }
 
-    public WebElement getNoteIdInput() {
-        this.waitForVisibilityOf(this.noteIdInput);
-        return this.noteIdInput;
-    }
-
-    public WebElement getNoteTitleInput() {
-        this.waitForVisibilityOf(this.noteTitleInput);
-        return this.noteTitleInput;
-    }
-
-    public WebElement getNoteDescriptionTextArea() {
-        this.waitForVisibilityOf(this.noteDescriptionTextArea);
-        return this.noteDescriptionTextArea;
-    }
-
     public List<WebElement> getNotes() {
         try {
             this.waitForVisibilityOf(this.notes.toArray(WebElement[]::new));
-
-            // below code are equivalent
-//            this.waitForVisibilityOf(this.notes.toArray(new WebElement[0]));
-//            this.waitForVisibilityOf(this.notes.stream().toArray(WebElement[]::new));
-
         } catch (TimeoutException timeoutException) {
             return new ArrayList<>();
         }
         return this.notes;
     }
 
-    public WebElement getDeleteNoteBtn() {
-        this.waitForVisibilityOf(this.deleteNoteBtn);
-        return this.deleteNoteBtn;
-    }
 }

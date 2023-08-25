@@ -61,11 +61,6 @@ class CloudStorageApplicationTests {
         resultPage = new ResultPage(driver);
     }
 
-//    @AfterEach
-//    public void afterEach() {
-//
-//    }
-
     @AfterAll
     public static void afterAll() {
         if (driver != null) {
@@ -367,10 +362,10 @@ class CloudStorageApplicationTests {
         File file = new File(fileName);
         mockUploadFile(filesTabPage, file);
 
-        deleteFile(filesTabPage);
+        mockDeleteFile(filesTabPage);
     }
 
-    private void deleteFile(FilesTabPage filesTabPage) {
+    private void mockDeleteFile(FilesTabPage filesTabPage) {
         try {
             final String deletedFileTitle = filesTabPage.deleteFile();
             if (this.resultPage.isSuccess()) {
@@ -380,13 +375,8 @@ class CloudStorageApplicationTests {
                 wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
                 List<WebElement> files = filesTabPage.getFiles();
                 Optional<WebElement> deletedFile = files.stream()
-                        .filter(
-                                f ->
-                                        f.findElement(By.cssSelector("th"))
-                                                .getText().equals(deletedFileTitle)
-                        )
+                        .filter(f -> f.findElement(By.cssSelector("th")).getText().equals(deletedFileTitle))
                         .findFirst();
-
                 Assertions.assertFalse(deletedFile.isPresent());
             } else {
                 Assertions.fail();
@@ -402,8 +392,8 @@ class CloudStorageApplicationTests {
         if (Files.exists(downloadPath)) {
             // delete downloadPath directory and all its content
             try {
-                Files.walk(downloadPath) // walks the depth 0 also (the path itself)
-                        .sorted(Comparator.reverseOrder()) // so that innermost path processed first to ensure directory is empty before deleting it.
+                Files.walk(downloadPath)
+                        .sorted(Comparator.reverseOrder())
                         .forEach(p -> {
                             try {
                                 Files.delete(p);
@@ -434,54 +424,6 @@ class CloudStorageApplicationTests {
         return false;
     }
 
-
-//    @Test
-//    public void testCreateNoteAndVerifyCreatedNote() throws InterruptedException {
-//
-//        WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
-//
-//        doMockSignUp("rahul", "rahul", "rahulrahul", "123");
-//        doLogIn("rahulrahul", "123");
-//
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
-//        WebElement notesTab = driver.findElement(By.id("nav-notes-tab"));
-//        notesTab.click();
-//
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("add-new-note")));
-//        WebElement newNoteButton = driver.findElement(By.id("add-new-note"));
-//        newNoteButton.click();
-//
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("note-title")));
-//        WebElement noteTitle = driver.findElement(By.id("note-title"));
-//        noteTitle.sendKeys("Test note title");
-//
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("note-description")));
-//        WebElement noteDescription = driver.findElement(By.id("note-description"));
-//        noteDescription.sendKeys("Test note description");
-//
-//        Thread.sleep(10000);
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("save-note-button")));
-//        WebElement saveNoteButton = driver.findElement((By.id("save-note-button")));
-//        saveNoteButton.click();
-//
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab")));
-//        WebElement notesTab2 = driver.findElement(By.id("nav-notes-tab"));
-//        notesTab2.click();
-//
-//        Thread.sleep(10000);
-//
-//        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("notesTable")));
-//        WebElement notesTable = driver.findElement(By.id("notesTable"));
-//        WebElement notesTableBody = notesTable.findElement(By.tagName("tbody"));
-//        WebElement lastRow = notesTableBody.findElement(By.cssSelector("tr:last-of-type"));
-//        WebElement lastRowNoteTitle = lastRow.findElement(By.tagName("th"));
-//        WebElement lastRowNoteDescription = notesTableBody.findElement(By.cssSelector("td:last-of-type"));
-//
-//        Assertions.assertSame("Test note title", lastRowNoteTitle.getText());
-//        Assertions.assertSame("Test note description", lastRowNoteDescription.getText());
-//
-//    }
-
     @Test
     void testCreateNote() {
 
@@ -494,11 +436,11 @@ class CloudStorageApplicationTests {
         NotesTabPage notesTabPage = new NotesTabPage(driver);
         String title = "Test Title";
         String description = "Test Description";
-        createMockNote(title, description, notesTabPage);
+        mockCreateNote(title, description, notesTabPage);
 
     }
 
-    private void createMockNote(String title, String description, NotesTabPage notesTabPage) {
+    private void mockCreateNote(String title, String description, NotesTabPage notesTabPage) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
         try {
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
@@ -528,11 +470,11 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
-        createMockNote("Test Title", "Test description", notesTabPage);
-        updateNote(notesTabPage, "New Test Title", "New test description");
+        mockCreateNote("Test Title", "Test description", notesTabPage);
+        mockUpdateNote(notesTabPage, "New Test Title", "New test description");
     }
 
-    private void updateNote(NotesTabPage notesTabPage, String newTitle, String newDescription) {
+    private void mockUpdateNote(NotesTabPage notesTabPage, String newTitle, String newDescription) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
         try {
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
@@ -568,13 +510,13 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
-        createMockNote("Test Title", "Test description", notesTabPage);
+        mockCreateNote("Test Title", "Test description", notesTabPage);
 
-        deleteNote(notesTabPage);
+        mockDeleteNote(notesTabPage);
 
     }
 
-    private void deleteNote(NotesTabPage notesTabPage) {
+    private void mockDeleteNote(NotesTabPage notesTabPage) {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
         try {
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();

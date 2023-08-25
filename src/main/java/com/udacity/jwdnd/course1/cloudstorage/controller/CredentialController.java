@@ -57,11 +57,7 @@ public class CredentialController {
         Integer userId = this.userService.getUser(authentication.getName()).getUserId();
 
         this.credentialService.deleteCredential(credentialId, userId);
-
-        // TODO: handle if credentials not found or any error while deleting the credentials
         model.addAttribute("success", "Credentials removed successfully.");
-        //        model.addAttribute("error",
-        //        "There was an error removing credentials. Please try again after some time.");
 
         return "result";
     }

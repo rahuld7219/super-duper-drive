@@ -55,11 +55,8 @@ public class NoteController {
 
         this.noteService.deleteNote(noteId, userId);
 
-        // TODO: handle if note not found or any error while deleting the note
         model.addAttribute("success",
                 "Note deleted successfully.");
-        //        model.addAttribute("error",
-        //        "There was an error removing note. Please try again after some time.");
 
         return "result";
     }

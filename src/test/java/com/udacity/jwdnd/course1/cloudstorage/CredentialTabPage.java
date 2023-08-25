@@ -20,12 +20,18 @@ public class CredentialTabPage {
     @FindBy(id = "add-new-credential")
     private WebElement addNewCredentialBtn;
 
+    /**
+     * get the last row's edit button
+     */
     @FindBys({
             @FindBy(id = "credential-table"),
             @FindBy(css = ".btn-success:last-of-type")}
     )
     private WebElement editCredentialBtn;
 
+    /**
+     * get the last row's delete button
+     */
     @FindBy(css = "#credential-table .btn-danger:last-of-type")
     private WebElement deleteCredentialBtn;
 
@@ -99,6 +105,7 @@ public class CredentialTabPage {
                 .until(ExpectedConditions.titleContains("Result"));
         return credentialId;
     }
+
     public String deleteCredential() {
         this.waitForVisibilityOf(this.deleteCredentialBtn);
         String[] urlStrings = this.deleteCredentialBtn.getAttribute("href").split("/");
@@ -119,21 +126,6 @@ public class CredentialTabPage {
         return this.credentialPassword.getText();
     }
 
-    public WebElement getCredentialIdInput() {
-        this.waitForVisibilityOf(this.credentialIdInput);
-        return this.credentialIdInput;
-    }
-
-    public WebElement getCredentialUrlInput() {
-        this.waitForVisibilityOf(this.credentialUrlInput);
-        return this.credentialUrlInput;
-    }
-
-    public WebElement getCredentialUsernameInput() {
-        this.waitForVisibilityOf(this.credentialUsernameInput);
-        return this.credentialUsernameInput;
-    }
-
     public String getCredentialPasswordInput() {
         this.waitForVisibilityOf(this.editCredentialBtn);
         this.editCredentialBtn.click();
@@ -144,20 +136,10 @@ public class CredentialTabPage {
     public List<WebElement> getCredentials() {
         try {
             this.waitForVisibilityOf(this.credentials.toArray(WebElement[]::new));
-
-            // below code are equivalent
-//            this.waitForVisibilityOf(this.notes.toArray(new WebElement[0]));
-//            this.waitForVisibilityOf(this.notes.stream().toArray(WebElement[]::new));
-
         } catch (TimeoutException timeoutException) {
             return new ArrayList<>();
         }
         return this.credentials;
-    }
-
-    public WebElement getDeleteCredentialBtn() {
-        this.waitForVisibilityOf(this.deleteCredentialBtn);
-        return this.deleteCredentialBtn;
     }
 
     public String getCredentialUsername() {

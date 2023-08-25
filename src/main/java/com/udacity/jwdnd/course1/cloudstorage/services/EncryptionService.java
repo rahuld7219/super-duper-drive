@@ -2,7 +2,6 @@ package com.udacity.jwdnd.course1.cloudstorage.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.*;
@@ -57,17 +56,4 @@ public class EncryptionService {
         return encodedKey;
     }
 
-
-    // TODO: find better way to generate key, ecrypt and decrypt, devour the encryption and implementation in java topic
-    //    public String generateKey() {
-//        try {
-//            KeyGenerator generator = KeyGenerator.getInstance("AES");
-//            generator.init(128, new SecureRandom());
-//            System.out.println(generator.generateKey().toString());
-//            return generator.generateKey().toString();
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
 }

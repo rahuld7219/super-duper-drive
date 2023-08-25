@@ -1,21 +1,27 @@
 package com.udacity.jwdnd.course1.cloudstorage;
 
-import com.udacity.jwdnd.course1.cloudstorage.services.EncryptionService;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CloudStorageApplicationTests {
@@ -26,9 +32,24 @@ class CloudStorageApplicationTests {
     private String baseURL;
     private static WebDriver driver;
 
+    private static String tmpDownloadsDirectory;
+
     @BeforeAll
     static void beforeAll() {
-        driver = new FirefoxDriver();
+
+        // configure Firefox to download files to the user's current working directory/testDownloads.
+        FirefoxOptions firefoxOptions = new FirefoxOptions();
+        tmpDownloadsDirectory = System.getProperty("user.dir") + File.separator + "testDownloads";
+        // specifying that files should be saved to a specific directory without asking for user confirmation
+        firefoxOptions.addPreference("browser.download.folderList", 2);
+        //  sets the actual path to the directory where downloaded files should be stored.
+        firefoxOptions.addPreference("browser.download.dir", tmpDownloadsDirectory);
+        //  ensures that the custom directory specified in browser.download.dir is used for all downloads
+        firefoxOptions.addPreference("browser.download.useDownloadDir", true);
+        // ensures that files of any MIME type are automatically saved without user prompts.
+        firefoxOptions.addPreference("browser.helperApps.neverAsk.saveToDisk", "");
+
+        driver = new FirefoxDriver(firefoxOptions);
     }
 
     @BeforeEach
@@ -99,6 +120,8 @@ class CloudStorageApplicationTests {
             System.out.println(e.getMessage());
         }
 
+        Assertions.assertEquals(this.baseURL + "/home", driver.getCurrentUrl());
+
     }
 
     /**
@@ -144,44 +167,6 @@ class CloudStorageApplicationTests {
         Assertions.assertFalse(driver.getPageSource().contains("Whitelabel Error Page"));
     }
 
-
-    /**
-     * PLEASE DO NOT DELETE THIS TEST. You may modify this test to work with the
-     * rest of your code.
-     * This test is provided by Udacity to perform some basic sanity testing of
-     * your code to ensure that it meets certain rubric criteria.
-     * <p>
-     * If this test is failing, please ensure that you are handling uploading large files (>1MB),
-     * gracefully in your code.
-     * <p>
-     * Read more about file size limits here:
-     * https://spring.io/guides/gs/uploading-files/ under the "Tuning File Upload Limits" section.
-     */
-    @Test
-    void testLargeUpload() {
-        // Create a test account
-        doMockSignUp("Large File", "Test", "LFT", "123");
-        doLogIn("LFT", "123");
-
-        // Try to upload an arbitrary large file
-        WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
-        String fileName = "upload5m.zip";
-
-        webDriverWait.until(ExpectedConditions.visibilityOfElementLocated(By.id("fileUpload")));
-        WebElement fileSelectButton = driver.findElement(By.id("fileUpload"));
-        fileSelectButton.sendKeys(new File(fileName).getAbsolutePath());
-
-        WebElement uploadButton = driver.findElement(By.id("uploadButton"));
-        uploadButton.click();
-        try {
-            webDriverWait.until(ExpectedConditions.presenceOfElementLocated(By.id("success")));
-        } catch (org.openqa.selenium.TimeoutException e) {
-            System.out.println("Large File upload failed");
-        }
-        Assertions.assertFalse(driver.getPageSource().contains("HTTP Status 403 – Forbidden"));
-
-    }
-
     @Test
     void testAccessHomePageWithoutLogin() {
         WebDriverWait webDriverWait = new WebDriverWait(driver, Duration.ofSeconds(2));
@@ -198,11 +183,7 @@ class CloudStorageApplicationTests {
         String password = "123";
 
         doMockSignUp("SignUp Login Logout", "Test", username, password);
-
         doLogIn(username, password);
-
-        Assertions.assertEquals(this.baseURL + "/home", driver.getCurrentUrl());
-
         doLogout();
 
         driver.get(this.baseURL + "/home");
@@ -211,6 +192,222 @@ class CloudStorageApplicationTests {
 
         Assertions.assertEquals(this.baseURL + "/login", driver.getCurrentUrl());
     }
+
+    @Test
+    void testFileUpload() {
+        String username = "FUT";
+        String password = "123";
+
+        doMockSignUp("File Upload", "Test", username, password);
+        doLogIn(username, password);
+
+        FilesTabPage filesTabPage = new FilesTabPage(driver);
+        String fileName = "upload5m.zip";
+        File file = new File(fileName);
+        mockUploadFile(filesTabPage, file);
+
+    }
+
+    @Test
+    void testEmptyFileUpload() {
+
+        String username = "EFUT";
+        String password = "123";
+
+        doMockSignUp("Empty File Upload", "Test", username, password);
+        doLogIn(username, password);
+
+        FilesTabPage filesTabPage = new FilesTabPage(driver);
+        String fileName = "new_empty_file.txt";
+        File file = new File(fileName);
+        if (file.exists()) {
+            file.delete();
+        }
+        boolean fileCreated = false;
+        try {
+            fileCreated = file.createNewFile();
+        } catch (IOException e) {
+            System.out.println("Error creating empty file: " + e.getMessage());
+        }
+        Assertions.assertTrue(fileCreated);
+        if (fileCreated) {
+            mockUploadFile(filesTabPage, file);
+            file.delete();
+        }
+    }
+
+    /**
+     * PLEASE DO NOT DELETE THIS TEST. You may modify this test to work with the
+     * rest of your code.
+     * This test is provided by Udacity to perform some basic sanity testing of
+     * your code to ensure that it meets certain rubric criteria.
+     * <p>
+     * If this test is failing, please ensure that you are handling uploading large files (>1MB),
+     * gracefully in your code.
+     * <p>
+     * Read more about file size limits here:
+     * https://spring.io/guides/gs/uploading-files/ under the "Tuning File Upload Limits" section.
+     */
+    @Test
+    void testLargeUpload() {
+
+        String username = "LFUT";
+        String password = "123";
+
+        doMockSignUp("Large File Upload", "Test", username, password);
+        doLogIn(username, password);
+
+        FilesTabPage filesTabPage = new FilesTabPage(driver);
+        String fileName = "upload5m.zip";
+        File file = new File(fileName);
+        try {
+            mockUploadFile(filesTabPage, file);
+        } catch (org.openqa.selenium.TimeoutException e) {
+            System.out.println("Large File upload failed");
+        }
+        Assertions.assertFalse(driver.getPageSource().contains("HTTP Status 403 – Forbidden"));
+
+    }
+
+    private void mockUploadFile(FilesTabPage filesTabPage, File file) {
+
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
+        filesTabPage.uploadFile(file.getAbsolutePath());
+
+        // file.length() will return 0 for both empty files and files that do not exist
+        if (file.length() == 0) {
+            String errorMessage = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                    until(webDriver -> webDriver.findElement(By.cssSelector(".alert-danger:first-of-type span:first-of-type"))).getText();
+            Assertions.assertTrue(errorMessage.contains("Cannot upload empty file."));
+        } else {
+            WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                    until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+            homePageLink.click();
+            new WebDriverWait(driver, Duration.ofSeconds(2))
+                    .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
+            Assertions.assertEquals(file.getName(), filesTabPage.getFileTitle());
+        }
+    }
+
+    @Test
+    void testFileDownload() throws InterruptedException {
+
+        String username = "FDT";
+        String password = "123";
+
+        doMockSignUp("File Download", "Test", username, password);
+        doLogIn(username, password);
+
+        FilesTabPage filesTabPage = new FilesTabPage(driver);
+        final String fileName = "upload5m.zip";
+        File file = new File(fileName);
+        mockUploadFile(filesTabPage, file);
+
+        mockDownloadFile(filesTabPage, fileName);
+    }
+
+    private void mockDownloadFile(FilesTabPage filesTabPage, String fileName) {
+
+        Path downloadPath = Paths.get(tmpDownloadsDirectory);
+        Path downloadedFilePath = Paths.get(tmpDownloadsDirectory, fileName);
+
+        // check before downloading that the downloadPath not exists
+        Assertions.assertFalse(Files.exists(downloadPath));
+        if (!Files.exists(downloadPath)) {
+            try {
+                Files.createDirectory(downloadPath);
+                filesTabPage.downloadFile();
+                // Wait for atmost 60 sec period for the file to appear
+                waitForFile(downloadPath, fileName, 60, TimeUnit.SECONDS);
+            } catch (IOException e) {
+                System.out.println("Failed to create directory: " + e.getMessage());
+            }
+        }
+        // check file downloaded
+        Assertions.assertTrue(Files.exists(downloadedFilePath));
+        if (Files.exists(downloadedFilePath)) {
+            long fileSize = 0;
+            try {
+                fileSize = Files.size(downloadedFilePath);
+            } catch (IOException e) {
+                System.out.println("Error reading downloaded file size: " + e.getMessage());
+            }
+            Assertions.assertTrue(fileSize > 0);
+        }
+
+        deleteDownloadPath(downloadPath);
+    }
+
+    @Test
+    void testDeleteFile() {
+        String username = "DFT";
+        String password = "123";
+
+        doMockSignUp("Delete File", "Test", username, password);
+        doLogIn(username, password);
+
+        FilesTabPage filesTabPage = new FilesTabPage(driver);
+        final String fileName = "upload5m.zip";
+        File file = new File(fileName);
+        mockUploadFile(filesTabPage, file);
+        final String deletedFileTitle = filesTabPage.deleteFile();
+        String successMsg = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.id("success-msg"))).getText();
+        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
+                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
+        Assertions.assertTrue(successMsg.contains("File deleted successfully"));
+        homePageLink.click();
+        new WebDriverWait(driver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
+        List<WebElement> files = filesTabPage.getFiles();
+        Optional<WebElement> deletedFile = files.stream()
+                .filter(
+                        f ->
+                                f.findElement(By.cssSelector("th"))
+                                        .getText().equals(deletedFileTitle)
+                )
+                .findFirst();
+
+        Assertions.assertFalse(deletedFile.isPresent());
+    }
+
+    private void deleteDownloadPath(Path downloadPath) {
+        if (Files.exists(downloadPath)) {
+            // delete downloadPath directory and all its content
+            try {
+                Files.walk(downloadPath) // walks the depth 0 also (the path itself)
+                        .sorted(Comparator.reverseOrder()) // so that innermost path processed first to ensure directory is empty before deleting it.
+                        .forEach(p -> {
+                            try {
+                                Files.delete(p);
+                            } catch (IOException e) {
+                                System.out.println("Error deleting path: " + e.getMessage());
+                            }
+                        });
+            } catch (IOException e) {
+                System.out.println("Error reading download directory while deleting: " + e.getMessage());
+            }
+            Assertions.assertFalse(Files.exists(downloadPath));
+        }
+    }
+
+    public static boolean waitForFile(Path directory, String fileName, long timeout, TimeUnit timeUnit) {
+        long endTime = System.currentTimeMillis() + timeUnit.toMillis(timeout);
+
+        while (System.currentTimeMillis() < endTime) {
+            if (Files.exists(directory.resolve(fileName))) {
+                return true;
+            }
+            try {
+                Thread.sleep(1000); // Wait for 1 second before checking again
+            } catch (InterruptedException e) {
+                System.out.println("Waiting for file interrupted: " + e.getMessage());
+            }
+        }
+        return false;
+    }
+
 
 //    @Test
 //    public void testCreateNoteAndVerifyCreatedNote() throws InterruptedException {

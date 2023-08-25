@@ -34,7 +34,10 @@ public class FileController {
         Integer userId = userService.getUser(authentication.getName()).getUserId();
 
         // TODO: handle empty file upload
-        if (!this.fileService.isFileNameAvailableForUser(userId, file.getOriginalFilename())) {
+        if (file.isEmpty()) {
+            model.addAttribute("error",
+                    "Cannot upload empty file.");
+        } else if (!this.fileService.isFileNameAvailableForUser(userId, file.getOriginalFilename())) {
             model.addAttribute("error",
                     "File already exists with the filename: " + file.getOriginalFilename());
         } else if (this.fileService.uploadFile(file, userId) < 0) {

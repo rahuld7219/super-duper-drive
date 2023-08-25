@@ -29,19 +29,19 @@
                             <div class="container">
                                 <div class="row" style="margin: 1em;">
                                     <div class="col-sm-2">
-                                        <label for="fileUpload">Upload a New File:</label>
+                                        <label for="file-upload-input">Upload a New File:</label>
                                     </div>
                                     <div class="col-sm-6">
-                                        <input type="file" class="form-control-file" id="fileUpload" name="fileUpload">
+                                        <input type="file" class="form-control-file" id="file-upload-input" name="fileUpload">
                                     </div>
                                     <div class="col-sm-4">
-                                        <button type="submit" class="btn btn-dark" id="uploadButton">Upload</button>
+                                        <button type="submit" class="btn btn-dark" id="upload-btn">Upload</button>
                                     </div>
                                 </div>
                             </div>
                         </form>
                         <div class="table-responsive">
-                            <table class="table table-striped" id="fileTable" th:if="${!#lists.isEmpty(userFiles)}">
+                            <table class="table table-striped" id="files-table" th:if="${!#lists.isEmpty(userFiles)}">
                                 <thead>
                                     <tr>
                                         <th style="width: 20%" scope="col"></th>
@@ -49,7 +49,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="file: ${userFiles}">
+                                    <tr th:each="file: ${userFiles}" class="file-list">
                                         <td>
                                             <a target="_blank" class="btn btn-success" th:href="@{\file\download\{id}(id = ${file.fileId})}">View</a>
                                             <a  class="btn btn-danger" th:href="@{file\delete\{id}(id = ${file.fileId})}">Delete</a>

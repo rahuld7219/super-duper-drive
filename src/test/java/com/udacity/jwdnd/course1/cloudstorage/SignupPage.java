@@ -15,9 +15,6 @@ public class SignupPage {
     @FindBy(id = "inputFirstName")
     private WebElement firstNameInput;
 
-//    @FindBy(css = "#inputFirstName")
-//    private WebElement firstNameField;
-
     @FindBy(id = "inputLastName")
     private WebElement lastNameInput;
 

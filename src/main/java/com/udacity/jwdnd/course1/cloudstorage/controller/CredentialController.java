@@ -59,7 +59,7 @@ public class CredentialController {
         this.credentialService.deleteCredential(credentialId, userId);
 
         // TODO: handle if credentials not found or any error while deleting the credentials
-        model.addAttribute("success", "credentials removed successfully.");
+        model.addAttribute("success", "Credentials removed successfully.");
         //        model.addAttribute("error",
         //        "There was an error removing credentials. Please try again after some time.");
 

@@ -13,16 +13,16 @@
             <div class="alert alert-success fill-parent" th:if="${success}">
                 <h1 class="display-5" id="success">Success</h1>
                 <span th:text="${success}" id="success-msg">Your changes were successfully saved.</span>
-                <span>Click <a th:href="@{/home}">here</a> to continue.</span>
+                <span>Click <a th:href="@{/home}" id="success-redirect">here</a> to continue.</span>
             </div>
             <div class="alert alert-danger fill-parent" th:if="${error}">
                 <h1 class="display-5" id="error">Error</h1>
-                <span th:text="${error + ' '}">Example Error Message</span>
-                <span>Click <a th:href="@{/home}">here</a> to continue.</span>
+                <span th:text="${error + ' '}" id="custom-error-msg">Example Error Message</span>
+                <span>Click <a th:href="@{/home}" id="error-redirect">here</a> to continue.</span>
             </div>
             <div class="alert alert-danger fill-parent" th:if="${errorDetails}">
-                <h1 class="display-5" th:text="${errorDetails.get('status')}"></h1>
-                <div th:text="${errorDetails.get('error')}">Example Error Message</div>
+                <h1 class="display-5" th:text="${errorDetails.get('status')}" id="error-status-code"></h1>
+                <div th:text="${errorDetails.get('error')}" id="error-msg">Example Error Message</div>
             </div>
         </div>
     </body>

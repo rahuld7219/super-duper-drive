@@ -22,11 +22,11 @@ public class CredentialTabPage {
 
     @FindBys({
             @FindBy(id = "credential-table"),
-            @FindBy(className = "btn-success")}
+            @FindBy(css = ".btn-success:last-of-type")}
     )
     private WebElement editCredentialBtn;
 
-    @FindBy(css = "#credential-table .btn-danger")
+    @FindBy(css = "#credential-table .btn-danger:last-of-type")
     private WebElement deleteCredentialBtn;
 
     @FindBy(className = "credential-list")
@@ -65,71 +65,79 @@ public class CredentialTabPage {
     }
 
     private void waitForVisibilityOf(WebElement... webElements) {
-        WebDriverWait webDriverWait = new WebDriverWait(this.webDriver, Duration.ofSeconds(2));
-        webDriverWait.until(ExpectedConditions.visibilityOfAllElements(webElements));
+        new WebDriverWait(this.webDriver, Duration.ofSeconds(2)).until(ExpectedConditions.visibilityOfAllElements(webElements));
     }
 
     public void storeCredential(String url, String username, String password) {
-        waitForVisibilityOf(this.addNewCredentialBtn);
+        this.waitForVisibilityOf(this.addNewCredentialBtn);
         this.addNewCredentialBtn.click();
-        waitForVisibilityOf(this.credentialUrlInput, this.credentialUsernameInput, this.credentialPasswordInput);
+        this.waitForVisibilityOf(this.credentialUrlInput, this.credentialUsernameInput, this.credentialPasswordInput);
         this.credentialUrlInput.sendKeys(url);
         this.credentialUsernameInput.sendKeys(username);
         this.credentialPasswordInput.sendKeys(password);
-        waitForVisibilityOf(this.saveCredentialBtn);
+        this.waitForVisibilityOf(this.saveCredentialBtn);
         this.saveCredentialBtn.click();
         new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
                 .until(ExpectedConditions.titleContains("Result"));
     }
 
-    public String editCredential(String newUrl, String newUsername, String newPassword) {
+    public String updateCredential(String newUrl, String newUsername, String newPassword) {
 
-        waitForVisibilityOf(this.editCredentialBtn);
+        this.waitForVisibilityOf(this.editCredentialBtn);
         this.editCredentialBtn.click();
-        waitForVisibilityOf(this.credentialUrlInput, this.credentialUsernameInput, this.credentialPasswordInput);
-        String credentiaId = this.credentialIdInput.getAttribute("value");
+        this.waitForVisibilityOf(this.credentialUrlInput, this.credentialUsernameInput, this.credentialPasswordInput);
+        String credentialId = this.credentialIdInput.getAttribute("value");
         this.credentialUrlInput.clear();
         this.credentialUrlInput.sendKeys(newUrl);
         this.credentialUsernameInput.clear();
         this.credentialUsernameInput.sendKeys(newUsername);
         this.credentialPasswordInput.clear();
         this.credentialPasswordInput.sendKeys(newPassword);
-        waitForVisibilityOf(this.saveCredentialBtn);
+        this.waitForVisibilityOf(this.saveCredentialBtn);
         this.saveCredentialBtn.click();
         new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
                 .until(ExpectedConditions.titleContains("Result"));
-        return credentiaId;
+        return credentialId;
+    }
+    public String deleteCredential() {
+        this.waitForVisibilityOf(this.deleteCredentialBtn);
+        String[] urlStrings = this.deleteCredentialBtn.getAttribute("href").split("/");
+        String credentialId = urlStrings[urlStrings.length - 1];
+        this.deleteCredentialBtn.click();
+        new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.titleContains("Result"));
+        return credentialId;
     }
 
     public String getCredentialUrl() {
-        waitForVisibilityOf(this.credentialUrl);
+        this.waitForVisibilityOf(this.credentialUrl);
         return this.credentialUrl.getText();
     }
 
     public String getCredentialPassword() {
-        waitForVisibilityOf(this.credentialPassword);
+        this.waitForVisibilityOf(this.credentialPassword);
         return this.credentialPassword.getText();
     }
 
     public WebElement getCredentialIdInput() {
-        waitForVisibilityOf(this.credentialIdInput);
+        this.waitForVisibilityOf(this.credentialIdInput);
         return this.credentialIdInput;
     }
 
     public WebElement getCredentialUrlInput() {
-        waitForVisibilityOf(this.credentialUrlInput);
+        this.waitForVisibilityOf(this.credentialUrlInput);
         return this.credentialUrlInput;
     }
 
     public WebElement getCredentialUsernameInput() {
-        waitForVisibilityOf(this.credentialUsernameInput);
+        this.waitForVisibilityOf(this.credentialUsernameInput);
         return this.credentialUsernameInput;
     }
 
     public String getCredentialPasswordInput() {
-        waitForVisibilityOf(this.editCredentialBtn);
+        this.waitForVisibilityOf(this.editCredentialBtn);
         this.editCredentialBtn.click();
-        waitForVisibilityOf(this.credentialPasswordInput);
+        this.waitForVisibilityOf(this.credentialPasswordInput);
         return this.credentialPasswordInput.getAttribute("value");
     }
 

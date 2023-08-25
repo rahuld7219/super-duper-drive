@@ -57,7 +57,7 @@ public class NoteController {
 
         // TODO: handle if note not found or any error while deleting the note
         model.addAttribute("success",
-                "note deleted successfully.");
+                "Note deleted successfully.");
         //        model.addAttribute("error",
         //        "There was an error removing note. Please try again after some time.");
 

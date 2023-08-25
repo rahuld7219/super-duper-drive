@@ -24,11 +24,11 @@ public class NotesTabPage {
 
     @FindBys({
             @FindBy(id = "notes-table"),
-            @FindBy(className = "btn-success")}
+            @FindBy(css = ".btn-success:last-of-type")}
     )
     private WebElement editNoteBtn;
 
-    @FindBy(css = "#notes-table .btn-danger")
+    @FindBy(css = "#notes-table .btn-danger:last-of-type")
     private WebElement deleteNoteBtn;
 
     @FindBy(className = "note-list")
@@ -61,60 +61,70 @@ public class NotesTabPage {
     }
 
     private void waitForVisibilityOf(WebElement... webElements) {
-        WebDriverWait webDriverWait = new WebDriverWait(this.webDriver, Duration.ofSeconds(2));
-        webDriverWait.until(ExpectedConditions.visibilityOfAllElements(webElements));
+        new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.visibilityOfAllElements(webElements));
     }
 
     public void createNote(String title, String description) {
-        waitForVisibilityOf(this.addNewNoteBtn);
+        this.waitForVisibilityOf(this.addNewNoteBtn);
         this.addNewNoteBtn.click();
-        waitForVisibilityOf(this.noteTitleInput, this.noteDescriptionTextArea);
+        this.waitForVisibilityOf(this.noteTitleInput, this.noteDescriptionTextArea);
         this.noteTitleInput.sendKeys(title);
         this.noteDescriptionTextArea.sendKeys(description);
-        waitForVisibilityOf(this.saveNoteBtn);
+        this.waitForVisibilityOf(this.saveNoteBtn);
         this.saveNoteBtn.click();
         new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
                 .until(ExpectedConditions.titleContains("Result"));
     }
 
-    public String editNote(String title, String description) {
-        waitForVisibilityOf(this.editNoteBtn);
+    public String editNote(String newTitle, String newDescription) {
+        this.waitForVisibilityOf(this.editNoteBtn);
         this.editNoteBtn.click();
-        waitForVisibilityOf(this.noteTitleInput, this.noteDescriptionTextArea);
+        this.waitForVisibilityOf(this.noteTitleInput, this.noteDescriptionTextArea);
         String noteId = this.noteIdInput.getAttribute("value");
         this.noteTitleInput.clear();
-        this.noteTitleInput.sendKeys(title);
+        this.noteTitleInput.sendKeys(newTitle);
         this.noteDescriptionTextArea.clear();
-        this.noteDescriptionTextArea.sendKeys(description);
-        waitForVisibilityOf(this.saveNoteBtn);
+        this.noteDescriptionTextArea.sendKeys(newDescription);
+        this.waitForVisibilityOf(this.saveNoteBtn);
         this.saveNoteBtn.click();
         new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
                 .until(ExpectedConditions.titleContains("Result"));
         return noteId;
     }
 
+    public String deleteNote() {
+        this.waitForVisibilityOf(this.deleteNoteBtn);
+        String[] urlStrings = this.deleteNoteBtn.getAttribute("href").split("/");
+        String noteId = urlStrings[urlStrings.length - 1];
+        this.deleteNoteBtn.click();
+        new WebDriverWait(this.webDriver, Duration.ofSeconds(2))
+                .until(ExpectedConditions.titleContains("Result"));
+        return noteId;
+    }
+
     public String getNoteTitle() {
-        waitForVisibilityOf(this.noteTitle);
+        this.waitForVisibilityOf(this.noteTitle);
         return this.noteTitle.getText();
     }
 
     public String getNoteDescription() {
-        waitForVisibilityOf(this.noteDescription);
+        this.waitForVisibilityOf(this.noteDescription);
         return this.noteDescription.getText();
     }
 
     public WebElement getNoteIdInput() {
-        waitForVisibilityOf(this.noteIdInput);
+        this.waitForVisibilityOf(this.noteIdInput);
         return this.noteIdInput;
     }
 
     public WebElement getNoteTitleInput() {
-        waitForVisibilityOf(this.noteTitleInput);
+        this.waitForVisibilityOf(this.noteTitleInput);
         return this.noteTitleInput;
     }
 
     public WebElement getNoteDescriptionTextArea() {
-        waitForVisibilityOf(this.noteDescriptionTextArea);
+        this.waitForVisibilityOf(this.noteDescriptionTextArea);
         return this.noteDescriptionTextArea;
     }
 

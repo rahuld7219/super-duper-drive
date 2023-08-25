@@ -29,10 +29,13 @@ class CloudStorageApplicationTests {
     @LocalServerPort
     private int port;
 
-    private String baseURL;
     private static WebDriver driver;
 
     private static String tmpDownloadsDirectory;
+
+    private String baseURL;
+
+    private ResultPage resultPage;
 
     @BeforeAll
     static void beforeAll() {
@@ -55,6 +58,7 @@ class CloudStorageApplicationTests {
     @BeforeEach
     public void beforeEach() {
         baseURL = "http://localhost:" + this.port;
+        resultPage = new ResultPage(driver);
     }
 
 //    @AfterEach
@@ -96,11 +100,11 @@ class CloudStorageApplicationTests {
         SignupPage signupPage = new SignupPage(driver);
         try {
             signupPage.signup(firstName, lastName, userName, password);
+            Assertions.assertTrue(driver.findElement(By.id("success-msg")).getText().contains("You successfully signed up!"));
         } catch (TimeoutException e) {
             System.out.println(e.getMessage());
+            Assertions.fail(e.getMessage());
         }
-
-        Assertions.assertTrue(driver.findElement(By.id("success-msg")).getText().contains("You successfully signed up!"));
 
     }
 
@@ -110,7 +114,6 @@ class CloudStorageApplicationTests {
      * Helper method for Udacity-supplied sanity checks.
      **/
     private void doLogIn(String userName, String password) {
-        // Log in to our dummy account.
 
         driver.get(this.baseURL + "/login");
         LoginPage loginPage = new LoginPage(driver);
@@ -118,8 +121,8 @@ class CloudStorageApplicationTests {
             loginPage.login(userName, password);
         } catch (TimeoutException e) {
             System.out.println(e.getMessage());
+            Assertions.fail(e.getMessage());
         }
-
         Assertions.assertEquals(this.baseURL + "/home", driver.getCurrentUrl());
 
     }
@@ -260,33 +263,34 @@ class CloudStorageApplicationTests {
         FilesTabPage filesTabPage = new FilesTabPage(driver);
         String fileName = "upload5m.zip";
         File file = new File(fileName);
-        try {
-            mockUploadFile(filesTabPage, file);
-        } catch (org.openqa.selenium.TimeoutException e) {
-            System.out.println("Large File upload failed");
-        }
+        mockUploadFile(filesTabPage, file);
         Assertions.assertFalse(driver.getPageSource().contains("HTTP Status 403 – Forbidden"));
 
     }
 
     private void mockUploadFile(FilesTabPage filesTabPage, File file) {
 
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
-        filesTabPage.uploadFile(file.getAbsolutePath());
+        WebDriverWait wait = new WebDriverWait(this.driver, Duration.ofSeconds(2));
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
+            filesTabPage.uploadFile(file.getAbsolutePath());
 
-        // file.length() will return 0 for both empty files and files that do not exist
-        if (file.length() == 0) {
-            String errorMessage = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                    until(webDriver -> webDriver.findElement(By.cssSelector(".alert-danger:first-of-type span:first-of-type"))).getText();
-            Assertions.assertTrue(errorMessage.contains("Cannot upload empty file."));
-        } else {
-            WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                    until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-            homePageLink.click();
-            new WebDriverWait(driver, Duration.ofSeconds(2))
-                    .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
-            Assertions.assertEquals(file.getName(), filesTabPage.getFileTitle());
+            // file.length() will return 0 for both empty files and files that do not exist
+            if (file.length() == 0) {
+                if (this.resultPage.isError()) {
+                    Assertions.assertTrue(this.resultPage.getCustomErrorMsg().contains("Cannot upload empty file."));
+                } else {
+                    Assertions.fail("Empty file upload behaviour was not as expected.");
+                }
+            } else if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("upload successful"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
+                Assertions.assertEquals(file.getName(), filesTabPage.getFileTitle());
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
         }
     }
 
@@ -313,19 +317,28 @@ class CloudStorageApplicationTests {
         Path downloadedFilePath = Paths.get(tmpDownloadsDirectory, fileName);
 
         // check before downloading that the downloadPath not exists
-        Assertions.assertFalse(Files.exists(downloadPath));
+        if (Files.exists(downloadPath)) {
+            deleteDownloadPath(downloadPath);
+        }
+
+        // download the file
         if (!Files.exists(downloadPath)) {
             try {
                 Files.createDirectory(downloadPath);
                 filesTabPage.downloadFile();
                 // Wait for atmost 60 sec period for the file to appear
-                waitForFile(downloadPath, fileName, 60, TimeUnit.SECONDS);
+                if (!waitForFile(downloadPath, fileName, 60, TimeUnit.SECONDS)) {
+                    Assertions.fail("Downloading file was taking too much time.");
+                }
             } catch (IOException e) {
                 System.out.println("Failed to create directory: " + e.getMessage());
+            } catch (TimeoutException timeoutException) {
+                System.out.println(timeoutException.getMessage());
+                Assertions.fail();
             }
         }
-        // check file downloaded
-        Assertions.assertTrue(Files.exists(downloadedFilePath));
+
+        // check the file downloaded
         if (Files.exists(downloadedFilePath)) {
             long fileSize = 0;
             try {
@@ -334,6 +347,8 @@ class CloudStorageApplicationTests {
                 System.out.println("Error reading downloaded file size: " + e.getMessage());
             }
             Assertions.assertTrue(fileSize > 0);
+        } else {
+            Assertions.fail("File not downloaded successfully.");
         }
 
         deleteDownloadPath(downloadPath);
@@ -351,25 +366,36 @@ class CloudStorageApplicationTests {
         final String fileName = "upload5m.zip";
         File file = new File(fileName);
         mockUploadFile(filesTabPage, file);
-        final String deletedFileTitle = filesTabPage.deleteFile();
-        String successMsg = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.id("success-msg"))).getText();
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        Assertions.assertTrue(successMsg.contains("File deleted successfully"));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
-        List<WebElement> files = filesTabPage.getFiles();
-        Optional<WebElement> deletedFile = files.stream()
-                .filter(
-                        f ->
-                                f.findElement(By.cssSelector("th"))
-                                        .getText().equals(deletedFileTitle)
-                )
-                .findFirst();
 
-        Assertions.assertFalse(deletedFile.isPresent());
+        deleteFile(filesTabPage);
+    }
+
+    private void deleteFile(FilesTabPage filesTabPage) {
+        try {
+            final String deletedFileTitle = filesTabPage.deleteFile();
+            if (this.resultPage.isSuccess()) {
+                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("File deleted successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-files-tab"))).click();
+                List<WebElement> files = filesTabPage.getFiles();
+                Optional<WebElement> deletedFile = files.stream()
+                        .filter(
+                                f ->
+                                        f.findElement(By.cssSelector("th"))
+                                                .getText().equals(deletedFileTitle)
+                        )
+                        .findFirst();
+
+                Assertions.assertFalse(deletedFile.isPresent());
+            } else {
+                Assertions.fail();
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
+
     }
 
     private void deleteDownloadPath(Path downloadPath) {
@@ -392,7 +418,7 @@ class CloudStorageApplicationTests {
         }
     }
 
-    public static boolean waitForFile(Path directory, String fileName, long timeout, TimeUnit timeUnit) {
+    private boolean waitForFile(Path directory, String fileName, long timeout, TimeUnit timeUnit) {
         long endTime = System.currentTimeMillis() + timeUnit.toMillis(timeout);
 
         while (System.currentTimeMillis() < endTime) {
@@ -402,7 +428,7 @@ class CloudStorageApplicationTests {
             try {
                 Thread.sleep(1000); // Wait for 1 second before checking again
             } catch (InterruptedException e) {
-                System.out.println("Waiting for file interrupted: " + e.getMessage());
+                System.out.println("Waiting for file download interrupted: " + e.getMessage());
             }
         }
         return false;
@@ -466,22 +492,30 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
-        String expectedTitle = "Test Title";
-        String expectedDescription = "Test Description";
-        createMockNote(expectedTitle, expectedDescription, notesTabPage);
-        Assertions.assertEquals(expectedTitle, notesTabPage.getNoteTitle());
-        Assertions.assertEquals(expectedDescription, notesTabPage.getNoteDescription());
+        String title = "Test Title";
+        String description = "Test Description";
+        createMockNote(title, description, notesTabPage);
+
     }
 
-    private void createMockNote(String expectedTitle, String expectedDescription, NotesTabPage notesTabPage) {
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
-        notesTabPage.createNote(expectedTitle, expectedDescription);
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+    private void createMockNote(String title, String description, NotesTabPage notesTabPage) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+            notesTabPage.createNote(title, description);
+            if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("Note created successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+                Assertions.assertEquals(title, notesTabPage.getNoteTitle());
+                Assertions.assertEquals(description, notesTabPage.getNoteDescription());
+            } else {
+                Assertions.fail();
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
     }
 
     @Test
@@ -494,30 +528,34 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
-        String title = "Test Title";
-        String description = "Test description";
-        createMockNote(title, description, notesTabPage);
-        String newTitle = "New Test Title";
-        String newDescription = "New test description";
-        String noteId = notesTabPage.editNote(newTitle, newDescription);
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+        createMockNote("Test Title", "Test description", notesTabPage);
+        updateNote(notesTabPage, "New Test Title", "New test description");
+    }
 
-        List<WebElement> notes = notesTabPage.getNotes();
-        Optional<WebElement> editedNote = notes.stream()
-                .filter(
-                        note ->
-                                note.findElement(By.cssSelector("td:first-of-type button"))
-                                        .getAttribute("data-id").equals(noteId)
-                )
-                .findFirst();
-
-        Assertions.assertTrue(editedNote.isPresent());
-        Assertions.assertEquals(newTitle, editedNote.get().findElement(By.cssSelector("th:first-of-type")).getText());
-        Assertions.assertEquals(newDescription, editedNote.get().findElement(By.cssSelector("td:last-of-type")).getText());
+    private void updateNote(NotesTabPage notesTabPage, String newTitle, String newDescription) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+            String noteId = notesTabPage.editNote(newTitle, newDescription);
+            if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("Note updated successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+                List<WebElement> notes = notesTabPage.getNotes();
+                Optional<WebElement> editedNote = notes.stream()
+                        .filter(note -> note.findElement(By.cssSelector("td:first-of-type button"))
+                                .getAttribute("data-id").equals(noteId))
+                        .findFirst();
+                Assertions.assertTrue(editedNote.isPresent());
+                Assertions.assertEquals(newTitle, editedNote.get().findElement(By.cssSelector("th:first-of-type")).getText());
+                Assertions.assertEquals(newDescription, editedNote.get().findElement(By.cssSelector("td:last-of-type")).getText());
+            } else {
+                Assertions.fail();
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
     }
 
     @Test
@@ -530,30 +568,33 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         NotesTabPage notesTabPage = new NotesTabPage(driver);
-        String title = "Test Title";
-        String description = "Test description";
-        createMockNote(title, description, notesTabPage);
+        createMockNote("Test Title", "Test description", notesTabPage);
 
-        WebElement deleteNoteBtn = notesTabPage.getDeleteNoteBtn();
-        String[] urlStrings = deleteNoteBtn.getAttribute("href").split("/");
-        String noteId = urlStrings[urlStrings.length - 1];
-        deleteNoteBtn.click();
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+        deleteNote(notesTabPage);
 
-        List<WebElement> notes = notesTabPage.getNotes();
-        Optional<WebElement> deletedNote = notes.stream()
-                .filter(
-                        note ->
-                                note.findElement(By.cssSelector("td:first-of-type a"))
-                                        .getAttribute("href").split("/")[2].equals(noteId)
-                )
-                .findFirst();
+    }
 
-        Assertions.assertFalse(deletedNote.isPresent());
+    private void deleteNote(NotesTabPage notesTabPage) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+            final String deletedNoteId = notesTabPage.deleteNote();
+            if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("Note deleted successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-notes-tab"))).click();
+                List<WebElement> notes = notesTabPage.getNotes();
+                Optional<WebElement> deletedNote = notes.stream()
+                        .filter(note -> note.findElement(By.cssSelector("td:first-of-type a"))
+                                .getAttribute("href").split("/")[2].equals(deletedNoteId))
+                        .findFirst();
+
+                Assertions.assertFalse(deletedNote.isPresent());
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
     }
 
     @Test
@@ -566,24 +607,30 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
-        String credentialUrl = "Test url";
-        String credentialUsername = "Test username";
-        String credentialPassword = "Test password";
-        saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
-        Assertions.assertEquals(credentialUrl, credentialTabPage.getCredentialUrl());
-        Assertions.assertEquals(credentialUsername, credentialTabPage.getCredentialUsername());
-        Assertions.assertNotEquals(credentialPassword, credentialTabPage.getCredentialPassword());
+        mockSaveCredential("Test url", "Test username", "Test password", credentialTabPage);
+
     }
 
-    private void saveMockCredential(String url, String username, String password, CredentialTabPage credentialTabPage) {
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
-        credentialTabPage.storeCredential(url, username, password);
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+    private void mockSaveCredential(String credentialUrl, String credentialUsername, String credentialPassword, CredentialTabPage credentialTabPage) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+            credentialTabPage.storeCredential(credentialUrl, credentialUsername, credentialPassword);
+            if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("Credentials stored successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+                Assertions.assertEquals(credentialUrl, credentialTabPage.getCredentialUrl());
+                Assertions.assertEquals(credentialUsername, credentialTabPage.getCredentialUsername());
+                Assertions.assertNotEquals(credentialPassword, credentialTabPage.getCredentialPassword());
+            } else {
+                Assertions.fail();
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
+
     }
 
     @Test
@@ -596,34 +643,38 @@ class CloudStorageApplicationTests {
         doLogIn(username, password);
 
         CredentialTabPage credentialTabPage = new CredentialTabPage(driver);
-        String credentialUrl = "Test url";
-        String credentialUsername = "Test username";
-        String credentialPassword = "Test password";
-        saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
-        String newUrl = "New Test url";
-        String newUsername = "New test username";
-        String newPassword = "New test password";
-        String credentialId = credentialTabPage.editCredential(newUrl, newUsername, newPassword);
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+        mockSaveCredential("Test url", "Test username", "Test password", credentialTabPage);
+        mockUpdateCredential(credentialTabPage, "New Test url", "New test username", "New test password");
 
-        List<WebElement> credentials = credentialTabPage.getCredentials();
-        Optional<WebElement> editedCredential = credentials.stream()
-                .filter(
-                        credential ->
-                                credential.findElement(By.cssSelector("td:first-of-type button"))
-                                        .getAttribute("data-id").equals(credentialId)
-                )
-                .findFirst();
+    }
 
-        Assertions.assertTrue(editedCredential.isPresent());
-        Assertions.assertEquals(newUrl, editedCredential.get().findElement(By.cssSelector("th:first-of-type")).getText());
-        Assertions.assertEquals(newUsername, editedCredential.get().findElement(By.cssSelector("td:nth-of-type(2)")).getText()); // td:nth-last-child(2)
-        Assertions.assertNotEquals(newPassword, editedCredential.get().findElement(By.cssSelector("td:last-of-type")).getText());
-        Assertions.assertEquals(newPassword, credentialTabPage.getCredentialPasswordInput()); // split into separate test
+    private void mockUpdateCredential(CredentialTabPage credentialTabPage, String newUrl, String newUsername, String newPassword) {
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+            String credentialId = credentialTabPage.updateCredential(newUrl, newUsername, newPassword);
+            if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("Credentials updated successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+                List<WebElement> credentials = credentialTabPage.getCredentials();
+                Optional<WebElement> editedCredential = credentials.stream()
+                        .filter(credential -> credential.findElement(By.cssSelector("td:first-of-type button"))
+                                .getAttribute("data-id").equals(credentialId))
+                        .findFirst();
+
+                Assertions.assertTrue(editedCredential.isPresent());
+                Assertions.assertEquals(newUrl, editedCredential.get().findElement(By.cssSelector("th:first-of-type")).getText());
+                Assertions.assertEquals(newUsername, editedCredential.get().findElement(By.cssSelector("td:nth-of-type(2)")).getText());
+                Assertions.assertNotEquals(newPassword, editedCredential.get().findElement(By.cssSelector("td:last-of-type")).getText());
+                Assertions.assertEquals(newPassword, credentialTabPage.getCredentialPasswordInput());
+            } else {
+                Assertions.fail();
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
     }
 
     @Test
@@ -639,27 +690,32 @@ class CloudStorageApplicationTests {
         String credentialUrl = "Test url";
         String credentialUsername = "Test username";
         String credentialPassword = "Test password";
-        saveMockCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
+        mockSaveCredential(credentialUrl, credentialUsername, credentialPassword, credentialTabPage);
+        mockDeleteCredential(credentialTabPage);
+    }
 
-        WebElement deleteCredentialBtn = credentialTabPage.getDeleteCredentialBtn();
-        String[] urlStrings = deleteCredentialBtn.getAttribute("href").split("/");
-        String credentialId = urlStrings[urlStrings.length - 1];
-        deleteCredentialBtn.click();
-        WebElement homePageLink = new WebDriverWait(driver, Duration.ofSeconds(2)).
-                until(webDriver -> webDriver.findElement(By.cssSelector(".alert-success a")));
-        homePageLink.click();
-        new WebDriverWait(driver, Duration.ofSeconds(2))
-                .until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+    private void mockDeleteCredential(CredentialTabPage credentialTabPage) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(2));
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+            String credentialId = credentialTabPage.deleteCredential();
+            if (this.resultPage.isSuccess()) {
+                Assertions.assertTrue(this.resultPage.getSuccessMsg().contains("Credentials removed successfully"));
+                this.resultPage.redirectOnSuccess();
+                wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("nav-credentials-tab"))).click();
+                List<WebElement> credentials = credentialTabPage.getCredentials();
+                Optional<WebElement> deletedCredential = credentials.stream()
+                        .filter(credential -> credential.findElement(By.cssSelector("td:first-of-type a")).getAttribute("href")
+                                .split("/")[2].equals(credentialId))
+                        .findFirst();
+                Assertions.assertFalse(deletedCredential.isPresent());
+            } else {
+                Assertions.fail();
+            }
+        } catch (TimeoutException timeoutException) {
+            System.out.println(timeoutException.getMessage());
+            Assertions.fail(timeoutException.getMessage());
+        }
 
-        List<WebElement> credentials = credentialTabPage.getCredentials();
-        Optional<WebElement> deletedCredential = credentials.stream()
-                .filter(
-                        credential ->
-                                credential.findElement(By.cssSelector("td:first-of-type a"))
-                                        .getAttribute("href").split("/")[2].equals(credentialId)
-                )
-                .findFirst();
-
-        Assertions.assertFalse(deletedCredential.isPresent());
     }
 }
